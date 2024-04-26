@@ -1,11 +1,11 @@
 {
-	"id": "askify-obsidian-sync",
-	"name": "Askify Sync",
+	"id": "WiscO-obsidian-sync",
+	"name": "WiscO Sync",
 	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "This plugin help to sync notes from Askify (https://askify.video/) to Obsidian",
-	"author": "Askify founders",
-	"authorUrl": "https://askify.video",
-	"fundingUrl": "https://askify.video/",
+	"description": "This plugin help to sync notes from WiscO (https://WiscO.video/) to Obsidian",
+	"author": "WiscO founders",
+	"authorUrl": "https://WiscO.video",
+	"fundingUrl": "https://WiscO.video/",
 	"isDesktopOnly": true
 }

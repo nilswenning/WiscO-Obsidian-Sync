@@ -22,14 +22,14 @@ import AdmZip from 'adm-zip';
 
 // Remember to rename these classes and interfaces!
 
-interface AskifyPluginSettings {
-	AskifySyncKeySetting: string;
-	AskifyLocalFilePathSetting: string;
+interface WiscOPluginSettings {
+	WiscOSyncKeySetting: string;
+	WiscOLocalFilePathSetting: string;
 }
 
-const ASKIFY_DEFAULT_SETTINGS: AskifyPluginSettings = {
-	AskifySyncKeySetting: 'default',
-	AskifyLocalFilePathSetting: 'Askify'
+const WiscO_DEFAULT_SETTINGS: WiscOPluginSettings = {
+	WiscOSyncKeySetting: 'default',
+	WiscOLocalFilePathSetting: 'WiscO'
 }
 
 async function unzipFile(filePath, destPath) {
@@ -42,22 +42,22 @@ async function unzipFile(filePath, destPath) {
 	}
 }
 
-export default class AskifyPlugin extends Plugin {
-	settings: AskifyPluginSettings;
+export default class WiscOPlugin extends Plugin {
+	settings: WiscOPluginSettings;
 
 	async onload() {
 		console.log("plugin loadded..");
 		await this.loadSettings();
 
-		const ribbonIconEl = this.addRibbonIcon('circle', 'Askify Sync Plugin', async (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('circle', 'WiscO Sync Plugin', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('Askify Sync started');
+			new Notice('WiscO Sync started');
 
 			console.log("sync initiated");
-			const askifySyncVal = await this.loadData();
+			const WiscOSyncVal = await this.loadData();
 
-			if (askifySyncVal == null || askifySyncVal.AskifySyncKeySetting == '' || askifySyncVal.AskifySyncKeySetting == 'default') {
-				new Notice('Askify Sync Failed! Please add the Askify sync key in the plugin settings.');
+			if (WiscOSyncVal == null || WiscOSyncVal.WiscOSyncKeySetting == '' || WiscOSyncVal.WiscOSyncKeySetting == 'default') {
+				new Notice('WiscO Sync Failed! Please add the WiscO sync key in the plugin settings.');
 				return
 			}
 
@@ -67,7 +67,7 @@ export default class AskifyPlugin extends Plugin {
 
 			//Step 1. Create file and get its name from cloud storage 
 
-			let sync_key = askifySyncVal.AskifySyncKeySetting;
+			let sync_key = WiscOSyncVal.WiscOSyncKeySetting;
 
 			let zipFileName = await this.getNotesZipFileName(sync_key);
 			console.log("zipname is " + zipFileName);
@@ -81,24 +81,24 @@ export default class AskifyPlugin extends Plugin {
 			if (file) {
 				this.app.vault.delete(file);
 			}
-			await this.downloadAskifyNotesAsZip(vault, fileUrl, zipFileName);
+			await this.downloadWiscONotesAsZip(vault, fileUrl, zipFileName);
 
 			//@ts-ignore
 			let folderPath = this.app.vault.adapter.basePath;
 			let zipFilePath = folderPath + "/" + zipFileName;
 
-			// Step 3: create a folder of Askify
+			// Step 3: create a folder of WiscO
 			try {
-				if (!(this.app.vault.getAbstractFileByPath(askifySyncVal.AskifyLocalFilePathSetting) instanceof TFolder)) {
-					await vault.createFolder(askifySyncVal.AskifyLocalFilePathSetting)
+				if (!(this.app.vault.getAbstractFileByPath(WiscOSyncVal.WiscOLocalFilePathSetting) instanceof TFolder)) {
+					await vault.createFolder(WiscOSyncVal.WiscOLocalFilePathSetting)
 				}
 			} catch (e) {
 				console.log("error in creating the folder")
 				console.log(e);
 			}
-			let unzip_folder = folderPath + '/' + askifySyncVal.AskifyLocalFilePathSetting + '/'
+			let unzip_folder = folderPath + '/' + WiscOSyncVal.WiscOLocalFilePathSetting + '/'
 
-			// Step 4: unzip file in the Askify folder
+			// Step 4: unzip file in the WiscO folder
 			await unzipFile(zipFilePath, unzip_folder);
 
 			//Step 5: delete the zip file
@@ -113,7 +113,7 @@ export default class AskifyPlugin extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new AskifySettingTab(this.app, this));
+		this.addSettingTab(new WiscOSettingTab(this.app, this));
 	}
 
 	private async getNotesZipFileName(apikey) {
@@ -133,11 +133,11 @@ export default class AskifyPlugin extends Plugin {
 			const response = JSON.parse(resp.text);
 			return response.zip_file_name;
 		} catch (e) {
-			new Notice('Please add correct Askify sync key');
+			new Notice('Please add correct WiscO sync key');
 		}
 	}
 
-	private downloadAskifyNotesAsZip(vault, dlUrl, fileName) {
+	private downloadWiscONotesAsZip(vault, dlUrl, fileName) {
 
 		let fileData: ArrayBuffer;
 		return new Promise(async (resolve) => {
@@ -178,7 +178,7 @@ export default class AskifyPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, ASKIFY_DEFAULT_SETTINGS, await this.loadData());
+		this.settings = Object.assign({}, WiscO_DEFAULT_SETTINGS, await this.loadData());
 	}
 
 	async saveSettings() {
@@ -186,10 +186,10 @@ export default class AskifyPlugin extends Plugin {
 	}
 }
 
-class AskifySettingTab extends PluginSettingTab {
-	plugin: AskifyPlugin;
+class WiscOSettingTab extends PluginSettingTab {
+	plugin: WiscOPlugin;
 
-	constructor(app: App, plugin: AskifyPlugin) {
+	constructor(app: App, plugin: WiscOPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -202,35 +202,35 @@ class AskifySettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', {
-			text: 'Settings for Askify Sync plugin.'
+			text: 'Settings for WiscO Sync plugin.'
 		});
 
 		new Setting(containerEl)
-			.setName('Askify Obsidian sync key')
-			.setDesc('Get this key from the Askify website')
+			.setName('WiscO Obsidian sync key')
+			.setDesc('Get this key from the WiscO website')
 
 			.addText(text => text
 				.setPlaceholder('Enter your key')
-				.setValue(this.plugin.settings.AskifySyncKeySetting)
+				.setValue(this.plugin.settings.WiscOSyncKeySetting)
 
 				.onChange(async (value) => {
 
-					this.plugin.settings.AskifySyncKeySetting = value;
+					this.plugin.settings.WiscOSyncKeySetting = value;
 					await this.plugin.saveSettings();
 				}));
 
 		new Setting(containerEl)
-			.setName("Askify Local Folder Path")
+			.setName("WiscO Local Folder Path")
 			.setDesc("Enter the folder path where you want to sync the notes")
 
 			.addSearch((text) => {
 				new FolderSuggest(text.inputEl);
-				text.setPlaceholder("Example: Inbox/Askify")
-					.setValue(this.plugin.settings.AskifyLocalFilePathSetting)
+				text.setPlaceholder("Example: Inbox/WiscO")
+					.setValue(this.plugin.settings.WiscOLocalFilePathSetting)
 
 					.onChange(async (value) => {
 
-						this.plugin.settings.AskifyLocalFilePathSetting = value;
+						this.plugin.settings.WiscOLocalFilePathSetting = value;
 						await this.plugin.saveSettings();
 					});
 			});
