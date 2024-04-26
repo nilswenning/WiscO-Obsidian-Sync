@@ -25,11 +25,15 @@ import AdmZip from 'adm-zip';
 interface WiscOPluginSettings {
 	WiscOSyncKeySetting: string;
 	WiscOLocalFilePathSetting: string;
+	WiscOURLSetting: string;
+	WiscODlNewSetting: string;
 }
 
 const WiscO_DEFAULT_SETTINGS: WiscOPluginSettings = {
 	WiscOSyncKeySetting: 'default',
-	WiscOLocalFilePathSetting: 'WiscO'
+	WiscOLocalFilePathSetting: 'WiscO',
+	WiscOURLSetting: 'https://wisco.tunnelto.dev',
+	WiscODlNewSetting: "true"
 }
 
 async function unzipFile(filePath, destPath) {
@@ -49,7 +53,7 @@ export default class WiscOPlugin extends Plugin {
 		console.log("plugin loadded..");
 		await this.loadSettings();
 
-		const ribbonIconEl = this.addRibbonIcon('circle', 'WiscO Sync Plugin', async (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('sigma', 'WiscO Sync Plugin', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('WiscO Sync started');
 
@@ -68,10 +72,15 @@ export default class WiscOPlugin extends Plugin {
 			//Step 1. Create file and get its name from cloud storage 
 
 			let sync_key = WiscOSyncVal.WiscOSyncKeySetting;
+			let baseUrl = WiscOSyncVal.WiscOURLSetting;
+			let dlOnlyNew = WiscOSyncVal.WiscODlNewSetting;
 
-			let zipFileName = await this.getNotesZipFileName(sync_key);
+			let zipFileName = await this.getNotesZipFileName(sync_key, baseUrl, dlOnlyNew);
+			if (zipFileName == null) {
+				return;
+			}
 			console.log("zipname is " + zipFileName);
-			let fileUrl = "https://wisco.tunnelto.dev/v1/dlZip"
+			let fileUrl = baseUrl + "/v1/dlZip"
 
 			//Step 2 : Download the file as zip
 			//before downloading delete the file if it exists 
@@ -116,21 +125,34 @@ export default class WiscOPlugin extends Plugin {
 		this.addSettingTab(new WiscOSettingTab(this.app, this));
 	}
 
-	private async getNotesZipFileName(apikey) {
+	private async getNotesZipFileName(apikey, baseUrl, dlOnlyNew) {
+		console.log(dlOnlyNew)
 		console.log("preparing for api call");
-
+		if (dlOnlyNew == "true") {
+			dlOnlyNew = true;
+		} else {
+			dlOnlyNew = false;
+		}
+		let settings = {
+			"dlOnlyNew": dlOnlyNew
+		}
 		var config = {
 			method: 'post',
-			url: 'https://wisco.tunnelto.dev/v1/getZipFileName',
+			url: baseUrl + '/v1/getZipFileName',
 			headers: {
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/x-www-form-urlencoded',
 				'Authorization': apikey,
 			},
+			body: `settings=${encodeURIComponent(JSON.stringify(settings))}`
 		};
 
 		try {
 			let resp = await requestUrl(config);
 			const response = JSON.parse(resp.text);
+			if (response.message == "No new files to download") {
+				new Notice('There are no new notes to download');
+				return null;
+			}
 			return response.zip_file_name;
 		} catch (e) {
 			new Notice('Please add correct WiscO sync key');
@@ -142,7 +164,6 @@ export default class WiscOPlugin extends Plugin {
 		let fileData: ArrayBuffer;
 		return new Promise(async (resolve) => {
 			console.log("starting the download");
-			const settings = { dlOnlyNew: true };
 			const response = await requestUrl({
 				url: dlUrl,
 				method: "POST",
@@ -151,7 +172,6 @@ export default class WiscOPlugin extends Plugin {
 					'Authorization': '123',
 					'Content-Type': 'application/x-www-form-urlencoded',
 				},
-				body: `settings=${encodeURIComponent(JSON.stringify(settings))}`
 			});
 			fileData = response.arrayBuffer;
 
@@ -219,20 +239,51 @@ class WiscOSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
-			.setName("WiscO Local Folder Path")
-			.setDesc("Enter the folder path where you want to sync the notes")
+				new Setting(containerEl)
+				.setName("WiscO Local Folder Path")
+				.setDesc("Enter the folder path where you want to sync the notes")
+	
+				.addSearch((text) => {
+					new FolderSuggest(text.inputEl);
+					text.setPlaceholder("Example: Inbox/WiscO")
+						.setValue(this.plugin.settings.WiscOLocalFilePathSetting)
+	
+						.onChange(async (value) => {
+	
+							this.plugin.settings.WiscOLocalFilePathSetting = value;
+							await this.plugin.saveSettings();
+						});
+				});
 
-			.addSearch((text) => {
-				new FolderSuggest(text.inputEl);
-				text.setPlaceholder("Example: Inbox/WiscO")
-					.setValue(this.plugin.settings.WiscOLocalFilePathSetting)
-
-					.onChange(async (value) => {
-
-						this.plugin.settings.WiscOLocalFilePathSetting = value;
-						await this.plugin.saveSettings();
+				new Setting(containerEl)
+					.setName("WiscO Url")
+					.setDesc("Enter the server url")
+		
+					.addSearch((text) => {
+						new FolderSuggest(text.inputEl);
+						text.setPlaceholder("Example: https://wisco.tunnelto.dev")
+							.setValue(this.plugin.settings.WiscOURLSetting)
+		
+							.onChange(async (value) => {
+		
+								this.plugin.settings.WiscOURLSetting = value;
+								await this.plugin.saveSettings();
+							});
 					});
-			});
+					new Setting(containerEl)
+						.setName("WiscO Dl New ?")
+						.setDesc("true/false for downloading only new notes")
+			
+						.addSearch((text) => {
+							new FolderSuggest(text.inputEl);
+							text.setPlaceholder("Example: true/false")
+								.setValue(this.plugin.settings.WiscODlNewSetting)
+			
+								.onChange(async (value) => {
+			
+									this.plugin.settings.WiscODlNewSetting = value;
+									await this.plugin.saveSettings();
+								});
+						});
 	}
 }

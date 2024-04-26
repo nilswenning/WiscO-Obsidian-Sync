@@ -1,7 +1,7 @@
 {
 	"id": "WiscO-obsidian-sync",
 	"name": "WiscO Sync",
-	"version": "1.0.1",
+	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin help to sync notes from WiscO (https://WiscO.video/) to Obsidian",
 	"author": "WiscO founders",
