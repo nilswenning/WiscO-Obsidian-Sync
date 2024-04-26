@@ -10,6 +10,7 @@ import {
 	TFile,
 	TFolder,
 	addIcon,
+	request,
 	Vault,
 	requestUrl,
 	TAbstractFile
@@ -70,7 +71,7 @@ export default class AskifyPlugin extends Plugin {
 
 			let zipFileName = await this.getNotesZipFileName(sync_key);
 			console.log("zipname is " + zipFileName);
-			let fileUrl = "https://storage.googleapis.com/temporary_exports/" + zipFileName
+			let fileUrl = "https://wisco.tunnelto.dev/v1/dlZip"
 
 			//Step 2 : Download the file as zip
 			//before downloading delete the file if it exists 
@@ -117,37 +118,41 @@ export default class AskifyPlugin extends Plugin {
 
 	private async getNotesZipFileName(apikey) {
 		console.log("preparing for api call");
-		var data = JSON.stringify({
-			"apiKey": apikey
-		});
 
 		var config = {
 			method: 'post',
-			url: 'https://us-central1-talk-to-videos.cloudfunctions.net/obsidianPluginSync',
+			url: 'https://wisco.tunnelto.dev/v1/getZipFileName',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				'Authorization': apikey,
 			},
-			body: data
 		};
 
 		try {
 			let resp = await requestUrl(config);
-			return resp.text;
+			const response = JSON.parse(resp.text);
+			return response.zip_file_name;
 		} catch (e) {
-			if (e.status == 417) {
-				new Notice('Free limit of 25 Syncs reached! Upgrade to Askify Essential for unlimited syncs');
-			} else {
-				new Notice('Please add correct Askify sync key');
-			}
+			new Notice('Please add correct Askify sync key');
 		}
 	}
 
-	private downloadAskifyNotesAsZip(vault, fileUrl, fileName) {
+	private downloadAskifyNotesAsZip(vault, dlUrl, fileName) {
 
 		let fileData: ArrayBuffer;
 		return new Promise(async (resolve) => {
 			console.log("starting the download");
-			const response = await requestUrl({ url: fileUrl });
+			const settings = { dlOnlyNew: true };
+			const response = await requestUrl({
+				url: dlUrl,
+				method: "POST",
+				headers: {
+					'Accept': 'application/json',
+					'Authorization': '123',
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: `settings=${encodeURIComponent(JSON.stringify(settings))}`
+			});
 			fileData = response.arrayBuffer;
 
 			if (fileData != null) {
