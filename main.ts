@@ -79,7 +79,7 @@ export default class WiscOPlugin extends Plugin {
 			if (file) {
 				this.app.vault.delete(file);
 			}
-			await this.downloadWiscONotesAsZip(vault, fileUrl, zipFileName);
+			await this.downloadWiscONotesAsZip(vault, fileUrl, zipFileName, sync_key);
 
 			//@ts-ignore
 			let folderPath = this.app.vault.adapter.basePath;
@@ -162,7 +162,7 @@ export default class WiscOPlugin extends Plugin {
 		}
 	}
 
-	private downloadWiscONotesAsZip(vault, dlUrl, fileName) {
+	private downloadWiscONotesAsZip(vault, dlUrl, fileName, apiKey) {
 
 		let fileData: ArrayBuffer;
 		return new Promise(async (resolve) => {
@@ -172,7 +172,7 @@ export default class WiscOPlugin extends Plugin {
 				method: "POST",
 				headers: {
 					'Accept': 'application/json',
-					'Authorization': '123',
+					'Authorization': apiKey,
 					'Content-Type': 'application/x-www-form-urlencoded',
 				},
 			});
@@ -263,7 +263,6 @@ class WiscOSettingTab extends PluginSettingTab {
 					.setDesc("Enter the server url")
 		
 					.addSearch((text) => {
-						new FolderSuggest(text.inputEl);
 						text.setPlaceholder("Example: https://wisco.tunnelto.dev")
 							.setValue(this.plugin.settings.WiscOURLSetting)
 		
@@ -278,7 +277,6 @@ class WiscOSettingTab extends PluginSettingTab {
 						.setDesc("true/false for downloading only new notes")
 			
 						.addSearch((text) => {
-							new FolderSuggest(text.inputEl);
 							text.setPlaceholder("Example: true/false")
 								.setValue(this.plugin.settings.WiscODlNewSetting)
 			
