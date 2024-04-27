@@ -23,7 +23,7 @@
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.8",
-		"adm-zip": "^0.5.10",
-		"build": "^0.1.4"
+		"build": "^0.1.4",
+		"jszip": "^3.10.1"
 	}
 }

@@ -17,8 +17,7 @@ import {
 } from 'obsidian';
 
 import { FolderSuggest } from "./src/FolderSuggester";
-
-import AdmZip from 'adm-zip';
+const JSZip = require('jszip');
 
 // Remember to rename these classes and interfaces!
 
@@ -32,18 +31,8 @@ interface WiscOPluginSettings {
 const WiscO_DEFAULT_SETTINGS: WiscOPluginSettings = {
 	WiscOSyncKeySetting: 'default',
 	WiscOLocalFilePathSetting: 'WiscO',
-	WiscOURLSetting: 'https://wisco.tunnelto.dev',
+	WiscOURLSetting: 'http://127.0.0.1:8000',
 	WiscODlNewSetting: "true"
-}
-
-async function unzipFile(filePath, destPath) {
-	try {
-		const zip = new AdmZip(filePath);
-		zip.extractAllTo(destPath, true);
-	} catch (e) {
-		console.log("error in unzipping the file")
-		console.log(e);
-	}
 }
 
 export default class WiscOPlugin extends Plugin {
@@ -105,16 +94,30 @@ export default class WiscOPlugin extends Plugin {
 				console.log("error in creating the folder")
 				console.log(e);
 			}
-			let unzip_folder = folderPath + '/' + WiscOSyncVal.WiscOLocalFilePathSetting + '/'
+			let unzip_folder = '/' + WiscOSyncVal.WiscOLocalFilePathSetting + '/'
 
 			// Step 4: unzip file in the WiscO folder
-			await unzipFile(zipFilePath, unzip_folder);
-
+			try {
+				const data = await this.app.vault.adapter.readBinary(zipFileName);
+				const zip = new JSZip();
+				const contents = await zip.loadAsync(data);
+				Object.keys(contents.files).forEach(async (filename) => {
+					const fileData = await contents.files[filename].async('uint8array');
+					const destFilePath = `${unzip_folder}/${filename}`;
+					// Checking if it is a folder or a file
+					if (!contents.files[filename].dir) {
+						await this.app.vault.adapter.writeBinary(destFilePath, fileData);
+					}
+				});
+			} catch (e) {
+				console.log("error in unzipping the file");
+				console.log(e);
+			}
 			//Step 5: delete the zip file
 
 			const file2 = this.app.vault.getAbstractFileByPath(`${zipFileName}`)
 			if (file2) {
-				this.app.vault.delete(file2);
+				// this.app.vault.delete(file2);
 			} else {
 				console.log("Unable to delete file");
 			}
